@@ -1,0 +1,454 @@
+  <!DOCTYPE html>
+		
+<html>
+	<head>
+		<script src="http://cdn.peerjs.com/0.3/peer.min.js"></script>
+		<script src="/socket.io/socket.io.js"></script>
+		<script src="http://code.jquery.com/jquery-2.0.3.js"></script>
+		<link href='http://fonts.googleapis.com/css?family=Finger+Paint|Fredoka+One|Monoton|Gorditas|Geo|Jacques+Francois+Shadow|Julius+Sans+One' rel='stylesheet' type='text/css'>
+                <link rel="stylesheet" href="http://itp.nyu.edu/~tw981/layout.css" type="text/css" media="screen"> 
+                <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+		<script type="text/javascript">
+		
+			var alluserslen = null;
+			var myId = null;
+			var countnumber = 0;
+
+	var init = function() {
+         /* Get User Media */
+				//var videoElement = document.getElementById('myvideo');
+				//var peer = new Peer({key: 'uohu08l7r6swcdi'});
+				var my_stream = null;
+				console.log(my_stream);
+				
+				window.URL = window.URL || window.webkitURL || window.mozURL || window.msURL;
+				navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+				if (navigator.getUserMedia) {
+					navigator.getUserMedia({video: true, audio: true}, function(stream) {
+								my_stream = stream;
+								var videoElement = document.getElementById('myvideo');
+								videoElement.src = window.URL.createObjectURL(stream) || stream;
+								videoElement.play();
+					var peer_id = null;
+				var socket = io.connect('http://ec2-54-200-31-221.us-west-2.compute.amazonaws.com:8080/');
+				socket.on('connect', function() {
+				console.log("Connected");
+			        });
+				
+				socket.on('peer_id', function (data) {
+					console.log("Got a new peer: " + data);
+				
+					// Call them with our stream
+					console.log("Calling peer: " + data);						
+					var call = peer.call(data, my_stream);
+
+					call.on('stream', function(remoteStream) {
+						console.log("Got remote stream");
+						isUserCallingNow = true;
+						
+						var ovideoElement = document.createElement('video');
+						ovideoElement.className = 'videoE';
+						ovideoElement.src = window.URL.createObjectURL(remoteStream) || remoteStream;
+						document.body.appendChild(ovideoElement);
+						ovideoElement.play();
+					});
+				});
+				
+				var peer = new Peer({key: 'sr1apomrk7kqpvi'});
+				
+	                        peer.on('open', function(id) {
+				  console.log('My peer ID is: ' + id);
+				  peer_id = id;
+			  
+				  // If our socket is connected, send out our peer id here
+				  //if (socket.connected) {
+					console.log("sending out our peer id");
+					socket.emit("peer_id",peer_id);
+				  //}
+				});
+		
+				peer.on('call', function(incoming_call) {
+					console.log("Got a call!");
+					incoming_call.answer(my_stream); // Answer the call with an A/V stream.
+					incoming_call.on('stream', function(remoteStream) {
+						isUserCallingNow = true;
+						
+						var ovideoElement = document.createElement('video');
+						ovideoElement.className = 'videoE';
+						ovideoElement.src = window.URL.createObjectURL(remoteStream) || remoteStream;
+						document.body.appendChild(ovideoElement);
+						ovideoElement.play();
+					});
+				});
+							
+				 //var thecanvas = document.getElementById('thecanvas');
+			         //var thecontext = thecanvas.getContext('2d');	
+           
+				
+		
+				socket.on('set_id', function(data){
+				myId = data;
+				
+				console.log("myid is" + myId);
+			        //alert("myId is" + myId);
+				//nick = prompt("Enter your name");
+				//socket.emit('addnick', nick);
+				
+			        });
+				
+				socket.on('fulluserlist',function(data){
+				console.log("the user length is "+ data.length);
+				alluserslen = data.length;
+			        });
+			
+			        socket.on('scores', function(data){
+				console.log("the data length for now is" + data);
+				//var theElement = document.getElementById('messages');
+				//theElement.innerHTML = "";
+				for(var m =0; m <data.length; m++){
+			
+					console.log("this is a new way");
+					if(m==0){
+					var theElement = document.getElementById('messages0');}
+					else{
+					var theElement = document.getElementById('messages1');}
+					//theElement.innerHTML = "";
+					theElement.innerHTML = data[m];
+					if(data[m] < 70){
+						console.log("I am larger than 4");
+					if(m==0){
+					console.log('i am in thisone');
+					$('#leftone').animate({
+						height:"200px"
+					})
+					}
+					else if(m==1){
+					console.log('I am in thatone');
+					$('#rightone').animate({
+						height:"200px"
+					})
+					}
+					}
+					//var newvar = document.createElement('message')
+				    }
+			         });
+				
+			        var draw = function() {
+					console.log("userScore here is" + userScore);
+					countnumber = countnumber + 1;
+
+					var currentcountnumber = countnumber;
+					socket.emit('count', {currentcountnumber:userScore, myindexof:myId});
+					setTimeout(draw,1000);
+					
+				   };
+			         draw();
+				 
+				 
+		// -----------headtrackr---------------
+		
+    var videoInput;
+    var canvasInput;
+    var canvasOverlay;
+    var debugOverlay;
+    var overlayContext;
+    var headAngle;
+    var headWidth;
+    var headHeight;
+
+    var currAngle;
+    var initAngle;
+    var totalAngle  = 0;;
+    var counter;
+   
+    var htracker ;
+
+    var headtracking = function(){
+
+      console.log("headtracking init");
+      videoInput = document.getElementById('my-video');
+      canvasInput = document.getElementById('compare');
+      canvasOverlay = document.getElementById('overlay')
+      debugOverlay = document.getElementById('debug');
+      overlayContext = canvasOverlay.getContext('2d');
+
+      canvasOverlay.style.position = "absolute";
+      canvasOverlay.style.top = '10%';
+      canvasOverlay.style.left ="12%"
+      canvasOverlay.style.zIndex = '100001';
+      canvasOverlay.style.display = 'block';
+      debugOverlay.style.position = "absolute";
+      debugOverlay.style.top = '10%';
+      debugOverlay.style.left ="12%";
+      debugOverlay.style.zIndex = '100002';
+      debugOverlay.style.display = 'none';
+      
+      htracker = new headtrackr.Tracker({calcAngles : true, ui : false, headPosition : false, debug : debugOverlay});
+      htracker.init(videoInput, canvasInput);
+      htracker.start();
+    };
+
+
+    statusMessages = {
+        "whitebalance" : "checking for stability of camera whitebalance",
+        "detecting" : "Detecting face",
+        "hints" : "Hmm. Detecting the face is taking a long time",
+        "redetecting" : "Lost track of face, redetecting",
+        "lost" : "Lost track of face",
+        "found" : "Tracking face"
+      };
+      
+      supportMessages = {
+        "no getUserMedia" : "Unfortunately, <a href='http://dev.w3.org/2011/webrtc/editor/getusermedia.html'>getUserMedia</a> is not supported in your browser. Try <a href='http://www.opera.com/browser/'>downloading Opera 12</a> or <a href='http://caniuse.com/stream'>another browser that supports getUserMedia</a>. Now using fallback video for facedetection.",
+        "no camera" : "No camera found. Using fallback video for facedetection."
+      };
+      
+      document.addEventListener("headtrackrStatus", function(event) {
+        if (event.status in supportMessages) {
+          var messagep = document.getElementById('gUMMessage');
+          messagep.innerHTML = supportMessages[event.status];
+        } else if (event.status in statusMessages) {
+          var messagep = document.getElementById('headtrackerMessage');
+          messagep.innerHTML = statusMessages[event.status];
+        }
+      }, true);
+
+      // for each facetracking event received draw rectangle around tracked face on canvas
+      
+      document.addEventListener("facetrackingEvent", function( event ) {
+        // clear canvas
+        overlayContext.clearRect(0,0,200,150);
+        // once we have stable tracking, draw rectangle
+        if (event.detection == "CS") {
+
+          headWidth = ((event.width/2)) >> 0;
+          headHeight =  ((event.height/2)) >> 0;
+
+          overlayContext.translate(event.x, event.y);
+          
+          //overlayContext.rotate(event.angle-(Math.PI/2));
+          overlayContext.strokeStyle = "#00CC00";
+          overlayContext.strokeRect((-(event.width/2)) >> 0, (-(event.height/2)) >> 0, event.width, event.height);
+          //overlayContext.rotate((Math.PI/2)-event.angle);
+          overlayContext.translate(-event.x, -event.y);
+
+          checkHeadPos(event);
+          convertRadianToDegree(event);
+          isTrackingWorking();
+          getInitAngle();
+          isUserGazingOtherDirection();
+          getAttentionScore();
+          
+        }
+      });
+
+
+
+      var convertRadianToDegree = function(event){
+        headAngle = (event.angle * 180)/ Math.PI;
+      };
+
+      var isTrackingWorking = function(){
+        //document.getElementById("ratio").innerHTML = headWidth/headHeight;
+        if(headHeight > 105 || headHeight <30|| headWidth < 30 || headWidth > 80){
+          console.log("Restart");
+          reInitFaceDetection();
+        }
+      }
+
+      var initAngle;
+      var totalAngle = 0;;
+      var counter = 0;
+      var getInitTime = false;
+      var isInitAngleSet = false;
+      var currentTime;
+      var initTime;
+
+       //startTime = new Date().getTime();
+      var getInitAngle = function(){
+        //count 5 second to get average head angle
+        if(!getInitTime){
+          totalAngle = 0;
+          counter = 0;
+		  initTime = new Date().getTime();
+          getInitTime = true;
+
+        }else{
+          currentTime = new Date().getTime();
+          totalAngle += headAngle;
+          counter+=1;
+
+          if(Math.abs(initTime - currentTime) > 2000 && (!isInitAngleSet)){
+
+            initAngle = totalAngle/counter; 
+            console.log(initAngle);
+            getInitTime = false;
+            //isInitAngleSet = true;
+          }
+        }
+      }
+
+      var scoreInitCheck = false;
+      var getScoreInitTime = 0;
+      var getScoreElapsedTime = 0;
+      var userScore = 100;
+      var isUserCallingNow = false;
+      //I want to create a function that compare head position every other second.
+      
+
+      var getAttentionScore = function(){
+      	//check if users are calling each other, and then count score
+          if(isUserCallingNow){
+          	if(!scoreInitCheck){
+            getScoreInitTime = new Date().getTime();
+            scoreInitCheck = true;
+
+        }else{
+            getScoreElapsedTime = new Date().getTime();
+            if(Math.abs(getScoreInitTime- getScoreElapsedTime) > 500){
+              document.getElementById('score').innerHTML = userScore;
+              //socekt.emit("score", {score: score, userId : myId});
+              // console.log("initAngle : " + initAngle);
+              if(Math.abs(initAngle - headAngle) > 5){
+                document.getElementById('score').innerHTML = userScore;
+                userScore -= 1;
+                //socekt.emit("score", {score: score, userId : myId});
+              }
+	      
+              scoreInitCheck = false;
+            }
+        }
+          }
+      }
+      
+      var isUserGazingOtherDirection = function(){
+        if(!isInitAngleSet){
+          if(Math.abs(initAngle - headAngle) > 5){
+            console.log("user is not paying attention");
+            document.getElementById("warning").innerHTML = "Pay attention to conversation!";
+          }else{
+            document.getElementById("warning").innerHTML = ":-)";
+          }
+        }
+     }
+
+      var checkHeadPos =function(event){
+        // document.getElementById("headWidth").innerHTML = headWidth;
+        // document.getElementById("headHeight").innerHTML = headHeight;
+        document.getElementById("headAngle").innerHTML = headAngle;
+        document.getElementById("nick").innerHTML = nick;
+      };
+
+      var reInitFaceDetection = function(){
+        htracker.stop();
+        htracker.start();
+        getInitTime = false;
+        isInitAngleSet = false;
+      };
+
+      // turn off or on the canvas showing probability
+      function showProbabilityCanvas() {
+        var debugCanvas = document.getElementById('debug');
+	console.log("userScore is"+userScore);
+        if (debugCanvas.style.display == 'none') {
+          debugCanvas.style.display = 'block';
+        } else {
+          debugCanvas.style.display = 'none';
+        }
+      }
+
+      function onBlur() {
+          document.body.className = 'blurred';
+          userScore-=10;
+          document.getElementById('warning').innerHTML =" S/He is gone now";
+          console.log("You went to other tab!!! how dare you!");
+      };
+      function onFocus(){
+          document.body.className = 'focused';
+          console.log("current tab");
+      };
+
+      if (/*@cc_on!@*/false) { // check for Internet Explorer
+          document.onfocusin = onFocus;
+          document.onfocusout = onBlur;
+      } else {
+          window.onfocus = onFocus;
+          window.onblur = onBlur;
+      }
+
+		
+	                        
+				
+				}, function(err) {
+								console.log('Failed to get local stream' ,err);
+					});
+                                 };
+                              
+						
+			};
+			
+			
+		
+		</script>
+	</head>
+	<body onload="init();" style="background-color:rgb(225,230,209);">
+		<div id="title">FACEIT</div>
+		<div id="decrip">pay attentioin to the other</div>
+		<div id="messages0">
+		</div>
+		
+		<div id="messages1">
+		</div>
+		
+		<div id="scoredes0">attention score</div>
+		<div id="scoredes1">attention score</div>
+		
+		<img id="window1"  style=" z-index: 9999" src="http://itp.nyu.edu/~tw981/source/window.png">
+                <img id="window2" style=" z-index: 9999"  src="http://itp.nyu.edu/~tw981/source/window.png">
+               
+		<img id="leftone" src="http://itp.nyu.edu/~tw981/source/pulloff.png">
+		<img id="rightone" src="http://itp.nyu.edu/~tw981/source/pulloff.png">
+		<img style ="display:none" src="" id="imagefile">
+			
+		<video id="myvideo" width="300" height:auto style ="position:absolute;top:30%; left:17%; z-index:0"></video>
+		
+		<canvas id="thecanvas" width="320" height="240" style = "z-index:9999"></canvas>
+	
+		
+	<div id="video_container" style="display:none">
+			<!-- My Video Element////////////////////////// -->
+			<canvas id="compare" width="200" height="150" style="display:none"></canvas>
+			<video id="my-video" muted="true" loop autoplay width="240" height="150" src="" style="top:10%; left:12%; z-index:100000; position: absolute;"></video>
+			<canvas id="overlay" width="240" height="150" style="position: absolute; top:10%; left:12%; z-index: 100001; display: block;"></canvas>
+			<canvas id="debug" width="240" height="150" style="position: absolute; top:10%; left:12%; z-index: 100002; display: none;"></canvas>
+			
+			<!-- This part is not necessary and will be removed -->
+			<canvas id="thecanvas" width="320" height:auto style="display:none"></canvas>
+			<canvas id="imagefile" style="display:none"></canvas>
+			<!-- This part is not necessary and will be removed -->
+
+	</div>
+	
+         <!-- Display Part//////////////////////// -->
+		<div id="display" style="display: none">
+			<h1>Hello ! <span id="nick"></span></h1>
+			<h1>your score is : <span id="score"></span></h1>       
+	        <p>Head orientation is  : <span id="headAngle"></span></p>
+	        <p><span id="warning"></span></p>
+			
+			<!-- UI for headtrackr////////////////// -->
+			<p id="gUMMessage"></p>
+	        <p>Status : <span id="headtrackerMessage">Tracking face</span></p>
+	        <p><input type="button" onclick="reInitFaceDetection();" value="reinitiate facedetection">
+	        <br><br>
+	        <input type="checkbox" onclick="showProbabilityCanvas()" value="asdfasd">Show probability-map</p>
+		</div>
+	
+	
+	</body>
+	
+	<script src="http://code.jquery.com/jquery-2.0.3.js"></script>
+	
+
+
+</html>
